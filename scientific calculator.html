@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantumCalc - Scientific Calculator</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --text-color: #ecf0f1;
+            --button-bg: #3d566e;
+            --button-hover: #4a6b8a;
+            --function-bg: #2980b9;
+            --function-hover: #3498db;
+            --equals-bg: #27ae60;
+            --equals-hover: #2ecc71;
+            --clear-bg: #e74c3c;
+            --clear-hover: #c0392b;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --border-radius: 10px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a2a3a, #2c3e50);
+            color: var(--text-color);
+            padding: 20px;
+        }
+
+        .calculator {
+            width: 100%;
+            max-width: 400px;
+            background: var(--secondary-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .calculator:hover {
+            transform: translateY(-5px);
+        }
+
+        .display {
+            padding: 20px;
+            text-align: right;
+            background: var(--primary-color);
+            position: relative;
+        }
+
+        .display::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+        }
+
+        .previous-operand {
+            min-height: 24px;
+            font-size: 1rem;
+            color: rgba(236, 240, 241, 0.7);
+            word-wrap: break-word;
+        }
+
+        .current-operand {
+            min-height: 48px;
+            font-size: 2rem;
+            font-weight: 500;
+            word-wrap: break-word;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            padding: 15px;
+        }
+
+        button {
+            border: none;
+            outline: none;
+            padding: 15px 0;
+            font-size: 1.2rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            color: var(--text-color);
+            background: var(--button-bg);
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        button:active::after {
+            animation: ripple 0.6s ease-out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .span-2 {
+            grid-column: span 2;
+        }
+
+        .function {
+            background: var(--function-bg);
+        }
+
+        .function:hover {
+            background: var(--function-hover);
+        }
+
+        .equals {
+            background: var(--equals-bg);
+        }
+
+        .equals:hover {
+            background: var(--equals-hover);
+        }
+
+        .clear {
+            background: var(--clear-bg);
+        }
+
+        .clear:hover {
+            background: var(--clear-hover);
+        }
+
+        .operator {
+            background: #8e44ad;
+        }
+
+        .operator:hover {
+            background: #9b59b6;
+        }
+
+        .toggle-scientific {
+            background: #16a085;
+        }
+
+        .toggle-scientific:hover {
+            background: #1abc9c;
+        }
+
+        .scientific-buttons {
+            display: none;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            padding: 0 15px 15px;
+        }
+
+        .scientific-buttons.active {
+            display: grid;
+        }
+
+        .calculator-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--primary-color);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .calculator-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: var(--accent-color);
+        }
+
+        .calculator-mode {
+            font-size: 0.8rem;
+            color: rgba(236, 240, 241, 0.7);
+        }
+
+        @media (max-width: 500px) {
+            .buttons, .scientific-buttons {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            button {
+                padding: 12px 0;
+                font-size: 1rem;
+            }
+            
+            .span-2 {
+                grid-column: span 2;
+            }
+            
+            .current-operand {
+                font-size: 1.8rem;
+            }
+        }
+
+        @media (max-width: 350px) {
+            button {
+                padding: 10px 0;
+                font-size: 0.9rem;
+            }
+            
+            .current-operand {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="calculator-header">
+            <div class="calculator-title">Scientific Calculator</div>
+            <div class="calculator-mode">SCIENTIFIC</div>
+        </div>
+        <div class="display">
+            <div class="previous-operand" id="previous-operand"></div>
+            <div class="current-operand" id="current-operand">0</div>
+        </div>
+        <div class="buttons">
+            <button class="clear" onclick="clearAll()">AC</button>
+            <button class="function" onclick="deleteLastChar()">DEL</button>
+            <button class="function" onclick="appendOperator('%')">%</button>
+            <button class="operator" onclick="appendOperator('/')">/</button>
+            
+            <button class="function" onclick="calculateFunction('sin')">sin</button>
+            <button class="number" onclick="appendNumber('7')">7</button>
+            <button class="number" onclick="appendNumber('8')">8</button>
+            <button class="number" onclick="appendNumber('9')">9</button>
+            <button class="operator" onclick="appendOperator('*')">×</button>
+            
+            <button class="function" onclick="calculateFunction('cos')">cos</button>
+            <button class="number" onclick="appendNumber('4')">4</button>
+            <button class="number" onclick="appendNumber('5')">5</button>
+            <button class="number" onclick="appendNumber('6')">6</button>
+            <button class="operator" onclick="appendOperator('-')">-</button>
+            
+            <button class="function" onclick="calculateFunction('tan')">tan</button>
+            <button class="number" onclick="appendNumber('1')">1</button>
+            <button class="number" onclick="appendNumber('2')">2</button>
+            <button class="number" onclick="appendNumber('3')">3</button>
+            <button class="operator" onclick="appendOperator('+')">+</button>
+            
+            <button class="function" onclick="calculateFunction('sqrt')">√</button>
+            <button class="number" onclick="appendNumber('0')">0</button>
+            <button class="number" onclick="appendNumber('.')">.</button>
+            <button class="equals" onclick="calculate()">=</button>
+        </div>
+        <div class="scientific-buttons" id="scientific-buttons">
+            <button class="function" onclick="calculateFunction('log')">log</button>
+            <button class="function" onclick="calculateFunction('ln')">ln</button>
+            <button class="function" onclick="appendOperator('^')">x^y</button>
+            <button class="function" onclick="calculateFunction('pi')">π</button>
+            <button class="function" onclick="calculateFunction('e')">e</button>
+            
+            <button class="function" onclick="calculateFunction('fact')">x!</button>
+            <button class="function" onclick="appendOperator('(')">(</button>
+            <button class="function" onclick="appendOperator(')')">)</button>
+            <button class="function" onclick="calculateFunction('pow10')">10^x</button>
+            <button class="function" onclick="calculateFunction('pow2')">2^x</button>
+            
+            <button class="function" onclick="calculateFunction('asin')">sin⁻¹</button>
+            <button class="function" onclick="calculateFunction('acos')">cos⁻¹</button>
+            <button class="function" onclick="calculateFunction('atan')">tan⁻¹</button>
+            <button class="function" onclick="calculateFunction('exp')">exp</button>
+            <button class="function" onclick="calculateFunction('abs')">|x|</button>
+            
+            <button class="function" onclick="toggleDegRad()" id="deg-rad-btn">DEG</button>
+            <button class="function" onclick="calculateFunction('reciprocal')">1/x</button>
+            <button class="function" onclick="calculateFunction('square')">x²</button>
+            <button class="function" onclick="calculateFunction('cube')">x³</button>
+            <button class="function" onclick="calculateFunction('pow')">x^</button>
+        </div>
+    </div>
+
+    <script>
+        let currentOperand = '0';
+        let previousOperand = '';
+        let operation = undefined;
+        let shouldResetScreen = false;
+        let isDegreeMode = true;
+
+        const currentOperandElement = document.getElementById('current-operand');
+        const previousOperandElement = document.getElementById('previous-operand');
+        const scientificButtons = document.getElementById('scientific-buttons');
+        const degRadBtn = document.getElementById('deg-rad-btn');
+
+        // Initially show scientific buttons
+        scientificButtons.classList.add('active');
+
+        function appendNumber(number) {
+            if (currentOperand === '0' || shouldResetScreen) {
+                currentOperand = '';
+                shouldResetScreen = false;
+            }
+            
+            // Prevent multiple decimal points
+            if (number === '.' && currentOperand.includes('.')) return;
+            
+            currentOperand += number;
+            updateDisplay();
+        }
+
+        function appendOperator(operator) {
+            if (shouldResetScreen) {
+                operation = operator;
+                previousOperand = currentOperand;
+                updateDisplay();
+                return;
+            }
+            
+            if (operation !== undefined) calculate();
+            
+            operation = operator;
+            previousOperand = currentOperand;
+            currentOperand = '0';
+            updateDisplay();
+        }
+
+        function calculate() {
+            let computation;
+            const prev = parseFloat(previousOperand);
+            const current = parseFloat(currentOperand);
+            
+            if (isNaN(prev) || isNaN(current)) return;
+            
+            switch (operation) {
+                case '+':
+                    computation = prev + current;
+                    break;
+                case '-':
+                    computation = prev - current;
+                    break;
+                case '*':
+                    computation = prev * current;
+                    break;
+                case '/':
+                    computation = prev / current;
+                    break;
+                case '%':
+                    computation = prev % current;
+                    break;
+                case '^':
+                    computation = Math.pow(prev, current);
+                    break;
+                default:
+                    return;
+            }
+            
+            currentOperand = computation.toString();
+            operation = undefined;
+            previousOperand = '';
+            shouldResetScreen = true;
+            updateDisplay();
+        }
+
+        function calculateFunction(func) {
+            let value = parseFloat(currentOperand);
+            if (isNaN(value)) return;
+            
+            let result;
+            
+            switch (func) {
+                case 'sin':
+                    result = isDegreeMode ? Math.sin(value * Math.PI / 180) : Math.sin(value);
+                    break;
+                case 'cos':
+                    result = isDegreeMode ? Math.cos(value * Math.PI / 180) : Math.cos(value);
+                    break;
+                case 'tan':
+                    result = isDegreeMode ? Math.tan(value * Math.PI / 180) : Math.tan(value);
+                    break;
+                case 'asin':
+                    result = isDegreeMode ? Math.asin(value) * 180 / Math.PI : Math.asin(value);
+                    break;
+                case 'acos':
+                    result = isDegreeMode ? Math.acos(value) * 180 / Math.PI : Math.acos(value);
+                    break;
+                case 'atan':
+                    result = isDegreeMode ? Math.atan(value) * 180 / Math.PI : Math.atan(value);
+                    break;
+                case 'sqrt':
+                    result = Math.sqrt(value);
+                    break;
+                case 'log':
+                    result = Math.log10(value);
+                    break;
+                case 'ln':
+                    result = Math.log(value);
+                    break;
+                case 'pi':
+                    result = Math.PI;
+                    break;
+                case 'e':
+                    result = Math.E;
+                    break;
+                case 'fact':
+                    result = factorial(value);
+                    break;
+                case 'pow10':
+                    result = Math.pow(10, value);
+                    break;
+                case 'pow2':
+                    result = Math.pow(2, value);
+                    break;
+                case 'exp':
+                    result = Math.exp(value);
+                    break;
+                case 'abs':
+                    result = Math.abs(value);
+                    break;
+                case 'reciprocal':
+                    result = 1 / value;
+                    break;
+                case 'square':
+                    result = Math.pow(value, 2);
+                    break;
+                case 'cube':
+                    result = Math.pow(value, 3);
+                    break;
+                case 'pow':
+                    // For x^, we need the next number
+                    operation = '^';
+                    previousOperand = currentOperand;
+                    currentOperand = '0';
+                    shouldResetScreen = false;
+                    updateDisplay();
+                    return;
+                default:
+                    return;
+            }
+            
+            currentOperand = result.toString();
+            shouldResetScreen = true;
+            updateDisplay();
+        }
+
+        function factorial(n) {
+            if (n < 0) return NaN;
+            if (n === 0 || n === 1) return 1;
+            let result = 1;
+            for (let i = 2; i <= n; i++) {
+                result *= i;
+            }
+            return result;
+        }
+
+        function clearAll() {
+            currentOperand = '0';
+            previousOperand = '';
+            operation = undefined;
+            updateDisplay();
+        }
+
+        function deleteLastChar() {
+            if (currentOperand.length === 1 || (currentOperand.length === 2 && currentOperand.startsWith('-'))) {
+                currentOperand = '0';
+            } else {
+                currentOperand = currentOperand.slice(0, -1);
+            }
+            updateDisplay();
+        }
+
+        function toggleDegRad() {
+            isDegreeMode = !isDegreeMode;
+            degRadBtn.textContent = isDegreeMode ? 'DEG' : 'RAD';
+        }
+
+        function updateDisplay() {
+            currentOperandElement.textContent = currentOperand;
+            
+            if (operation !== undefined) {
+                previousOperandElement.textContent = `${previousOperand} ${operation}`;
+            } else {
+                previousOperandElement.textContent = previousOperand;
+            }
+        }
+
+        // Add keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '0' && e.key <= '9') appendNumber(e.key);
+            else if (e.key === '.') appendNumber('.');
+            else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/' || e.key === '^') {
+                appendOperator(e.key);
+            }
+            else if (e.key === '%') appendOperator('%');
+            else if (e.key === '(') appendOperator('(');
+            else if (e.key === ')') appendOperator(')');
+            else if (e.key === 'Enter' || e.key === '=') {
+                e.preventDefault();
+                calculate();
+            }
+            else if (e.key === 'Escape') clearAll();
+            else if (e.key === 'Backspace') deleteLastChar();
+        });
+    </script>
+</body>
+</html>
